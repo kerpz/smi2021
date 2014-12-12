@@ -78,7 +78,7 @@ static int vidioc_enum_fmt_vid_cap(struct file *file, void *priv,
 	if (f->index != 0)
 		return -EINVAL;
 
-	strlcpy(f->description, "16bpp YU2, 4:2:2, packed",
+	strlcpy(f->description, "16 bpp YUY2, 4:2:2, packed",
 					sizeof(f->description));
 	f->pixelformat = V4L2_PIX_FMT_UYVY;
 	return 0;
@@ -96,7 +96,7 @@ static int vidioc_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.bytesperline = SMI2021_BYTES_PER_LINE;
 	f->fmt.pix.sizeimage = f->fmt.pix.height * f->fmt.pix.bytesperline;
 	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
-	f->fmt.pix.priv = 0;
+
 	return 0;
 }
 
@@ -105,14 +105,6 @@ static int vidioc_g_std(struct file *file, void *priv, v4l2_std_id *norm)
 	struct smi2021 *smi2021 = video_drvdata(file);
 
 	*norm = smi2021->cur_norm;
-	return 0;
-}
-
-static int vidioc_g_input(struct file *file, void *priv, unsigned int *i)
-{
-	struct smi2021 *smi2021 = video_drvdata(file);
-
-	*i = smi2021->cur_input;
 	return 0;
 }
 
@@ -134,9 +126,19 @@ static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id norm)
 	else
 		return -EINVAL;
 
-	v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_std,
+	v4l2_device_call_all(&smi2021->v4l2_dev, 0, video, s_std,
 			smi2021->cur_norm);
+	//v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_std,
+	//		smi2021->cur_norm);
 
+	return 0;
+}
+
+static int vidioc_g_input(struct file *file, void *priv, unsigned int *i)
+{
+	struct smi2021 *smi2021 = video_drvdata(file);
+
+	*i = smi2021->cur_input;
 	return 0;
 }
 
@@ -147,8 +149,10 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	if (i >= smi2021->vid_input_count)
 		return -EINVAL;
 
-	v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_routing,
-		smi2021->vid_inputs[i].type, 0, 0);
+	v4l2_device_call_all(&smi2021->v4l2_dev, 0, video, s_routing,
+			smi2021->vid_inputs[i].type, 0, 0);
+	//v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_routing,
+	//	smi2021->vid_inputs[i].type, 0, 0);
 
 	smi2021->cur_input = i;
 

@@ -268,16 +268,11 @@ static u32 smi2021_i2c_functionality(struct i2c_adapter *adap)
 	return I2C_FUNC_SMBUS_EMUL;
 }
 
+/*
 static int smi2021_initialize(struct smi2021 *smi2021)
 {
 	int i, rc;
 
-	/*
-	 * These registers initializes the smi2021 chip,
-	 * but I have not been able to figure out exactly what they do.
-	 * My guess is that they toggle the reset pins of the
-	 * cs5350 and gm7113c chips.
-	 */
 	static u8 init[][2] = {
 		{ 0x3a, 0x80 },
 		{ 0x3b, 0x00 },
@@ -297,6 +292,7 @@ static int smi2021_initialize(struct smi2021 *smi2021)
 
 	return 0;
 }
+*/
 
 static struct smi2021_buf *smi2021_get_buf(struct smi2021 *smi2021)
 {
@@ -514,7 +510,6 @@ static void parse_video(struct smi2021 *smi2021, u8 *p, int size)
 static void process_packet(struct smi2021 *smi2021, u8 *p, int size)
 {
 	int i;
-	//int j;
 	u32 *header;
 
 	if (size % 0x400 != 0) {
@@ -528,9 +523,6 @@ static void process_packet(struct smi2021 *smi2021, u8 *p, int size)
 		switch (*header) {
 		case cpu_to_be32(0xaaaa0000):
 			parse_video(smi2021, p+i+4, 0x400-4);
-			//for (j = 4; j < 0x400; j++) {
-			//	parse_video2(smi2021, p[j + i]);
-			//}
 			break;
 		case cpu_to_be32(0xaaaa0001):
 			smi2021_audio(smi2021, p+i+4, 0x400-4);
@@ -1014,7 +1006,7 @@ static int smi2021_usb_probe(struct usb_interface *intf,
 		goto free_ctrl;
 	}
 
-	smi2021_initialize(smi2021);
+	//smi2021_initialize(smi2021);
 
 	/* i2c adapter */
 	smi2021->i2c_adap = adap_template;
@@ -1044,13 +1036,23 @@ static int smi2021_usb_probe(struct usb_interface *intf,
 	smi2021->gm7113c_subdev = v4l2_i2c_new_subdev(&smi2021->v4l2_dev, &smi2021->i2c_adap,
 		"gm7113c", 0, gm7113c_addrs);
 	
+	/* i2c reset saa711x */
+	v4l2_device_call_all(&smi2021->v4l2_dev, 0, core, reset, 0);
+	v4l2_device_call_all(&smi2021->v4l2_dev, 0, video, s_stream, 0);
+
+	/* Composite 0 default */
+	//v4l2_device_call_all(&smi2021->v4l2_dev, 0, video, s_routing,
+	//		smi2021->vid_inputs[smi2021->cur_input].type, 0, 0);
+
 	/* NTSC is default */
-	smi2021->cur_norm = V4L2_STD_NTSC;
-	smi2021->cur_height = SMI2021_NTSC_LINES;
-	v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_std,
-			smi2021->cur_norm);
-	v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_routing,
-			smi2021->vid_inputs[smi2021->cur_input].type, 0, 0);
+	//smi2021->cur_norm = V4L2_STD_NTSC;
+	//smi2021->cur_height = SMI2021_NTSC_LINES;
+	//v4l2_device_call_all(&smi2021->v4l2_dev, 0, video, s_std,
+	//		smi2021->cur_norm);
+	//v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_std,
+	//		smi2021->cur_norm);
+	//v4l2_subdev_call(smi2021->gm7113c_subdev, video, s_routing,
+	//		smi2021->vid_inputs[smi2021->cur_input].type, 0, 0);
 
 	usb_set_intfdata(intf, smi2021);
 
