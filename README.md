@@ -6,6 +6,10 @@ Somagic EasyCap Linux Kernel Driver
 How to use
 ---------
 
+Clean
+
+    make -C /lib/modules/`uname -r`/build M=`pwd` KMYDIR=`pwd` clean
+
 Build
 
     make -C /lib/modules/`uname -r`/build M=`pwd` KMYDIR=`pwd`
